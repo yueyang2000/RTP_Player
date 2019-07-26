@@ -18,20 +18,21 @@ VideoStream::VideoStream(QWidget *parent) :
     btnStop->setText("Stop");
     m_timerPlay = new QTimer;
     m_timerPlay->setInterval(40);
+    m_timerPlay->stop();
     m_i_frameFinished = 0;
     //关联信号与槽
     connect(m_timerPlay,SIGNAL(timeout()),this,SLOT(playSlots()));
     connect(this,SIGNAL(GetImage(QImage)),this,SLOT(SetImageSlots(QImage)));
     connect(btnStart,SIGNAL(clicked()),this, SLOT(startStream()));
     connect(btnStop,SIGNAL(clicked()),this,SLOT(stopStream()));
-    setUrl("/Users/yueyang/yiqunyang/大一暑假/科研/control.264");
+    //setUrl("/Users/yueyang/yiqunyang/大一暑假/科研/control.264");
     ui->setupUi(this);
     QVBoxLayout* lay = new QVBoxLayout;
     lay->addWidget(m_label);
     lay->addWidget(btnStart);
     lay->addWidget(btnStop);
     ui->centralWidget->setLayout(lay);
-    //qDebug()<<"construct successful\n";
+    qDebug()<<"window construct successful\n";
 }
 
 VideoStream::~VideoStream()
@@ -46,6 +47,13 @@ void VideoStream::setUrl(QString url)
 
 void VideoStream::startStream()
 {
+    recv.init(NULL,manager,&mutex);
+    qDebug()<<"recv.init() success\n";
+    recv.start();
+    QTime t;
+    t.start();
+    while(t.elapsed()<100);
+    //等一会
     if(playing == true) return;
     playing = true;
     videoStreamIndex=-1;
@@ -53,7 +61,7 @@ void VideoStream::startStream()
     avformat_network_init();//初始化网络流格式,使用RTSP网络流时必须先执行
     pAVFormatContext = avformat_alloc_context();//申请一个AVFormatContext结构的内存,并进行简单初始化
     pAVFrame=av_frame_alloc();
-
+    qDebug()<<"startStream OK\n";
     if (this->init())
     {
         m_timerPlay->start();
@@ -73,8 +81,8 @@ void VideoStream::stopStream()
 
 bool VideoStream::init()
 {
-    if(m_str_url.isEmpty())
-           return false;
+    //if(m_str_url.isEmpty())
+           //return false;
        /*打开视频流
        int result=avformat_open_input(&pAVFormatContext, m_str_url.toStdString().c_str(),NULL,NULL);
        if (result<0){
@@ -120,11 +128,11 @@ bool VideoStream::init()
        pSwsContext = sws_getContext(1280,720,AV_PIX_FMT_YUV420P,1280,720,AV_PIX_FMT_RGB24,SWS_BICUBIC,0,0,0);
         //这段照搬
        //打开对应解码器
-       avcodec_open2(pAVCodecContext,pAVCodec,NULL);
-       /*if (result<0){
+       int result = avcodec_open2(pAVCodecContext,pAVCodec,NULL);
+       if (result<0){
            qDebug()<<"打开解码器失败";
            return false;
-       }*/
+       }
 
        qDebug()<<"初始化视频流成功";
        return true;
@@ -167,15 +175,18 @@ void VideoStream::playSlots()
 }*/
 void VideoStream::playSlots()
 {
+    //没有获得图片就持续塞
+     mutex.lock();
+     qDebug()<<"playSlot()\n";
     while(m_i_frameFinished == 0){
         Data NALU = manager->OutputNALU();
         pAVPacket.data;
         pAVPacket.size;
         avcodec_decode_video2(pAVCodecContext,pAVFrame,&m_i_frameFinished,&pAVPacket);
     }
-    mutex.lock();
     sws_scale(pSwsContext,(const uint8_t* const *)pAVFrame->data,pAVFrame->linesize,0,videoHeight,pAVPicture.data,pAVPicture.linesize);
     QImage image(pAVPicture.data[0],videoWidth,videoHeight,QImage::Format_RGB888);
     emit GetImage(image);
     mutex.unlock();
+    av_free_packet(&pAVPacket);
 }

@@ -25,6 +25,8 @@ extern "C"
 #include <QImage>
 #include <QPushButton>
 #include "packet.h"
+#include <QThread>
+#include "recv.h"
 
 namespace Ui {
 class VideoStream;
@@ -66,6 +68,7 @@ private:
     PacketToNALU* manager;
     Ui::VideoStream *ui;
 
+    Recv_package recv;
 
 
 

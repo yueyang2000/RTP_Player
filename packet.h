@@ -1,19 +1,20 @@
 #ifndef PACKET_H
 #define PACKET_H
 #include <queue>
-
+#include <set>
 struct Data{
-    char* data;
+    unsigned char* data;
     int size;
 };
 
-class PacketToNALU{
-    std::queue<Data> StoreNALU;
-    bool unitFinished;
-    int CountSequenceNumber;
+class PacketToNALU
+{
+    std::queue<Data> q;
+    Data FU_buffer;
+    std::set<int> seq;
 
 public:
-    PacketToNALU():unitFinished(true), CountSequenceNumber(-1){ }
+    PacketToNALU(){}
     void InputPacket(Data packet);  //传入一个包
     Data OutputNALU();  //返回一个NALU
 };

@@ -26,10 +26,13 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
+        packet.cpp \
+        recv.cpp \
         videostream.cpp
 
 HEADERS += \
         packet.h \
+        recv.h \
         videostream.h
 
 FORMS += \
