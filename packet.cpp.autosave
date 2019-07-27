@@ -241,7 +241,8 @@ void Manager::InputNALU()
         av_free_packet(&pAVPacket);
         qDebug()<<"free";
         if(m_i_frameFinished){
-            sws_scale(pSwsContext,(const uint8_t* const *)pAVFrame->data,pAVFrame->linesize,0,720,pAVPicture.data,pAVPicture.linesize);
+            sws_scale(pSwsContext,(const uint8_t* const *)pAVFrame->data,pAVFrame->linesize,
+                      0,720,pAVPicture.data,pAVPicture.linesize);
             QImage image(pAVPicture.data[0],1280,720,QImage::Format_RGB888);
             if (image.height()>0){
                 QPixmap pix = QPixmap::fromImage(image.scaled(600,400));

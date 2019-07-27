@@ -8,19 +8,16 @@ class Recv_package: public QThread
 {
 private:
     QUdpSocket* socket;
-    PacketToNALU* manager;
-    QMutex* mutex;
+    quint16 port;
+    Manager* manager;
     bool m_start = false;
 
 protected:
     virtual void run();
 
 public:
-    Recv_package(){}
-    void init(QUdpSocket* so,PacketToNALU* ma ,QMutex* mu){
-        socket = so;
+    void init(Manager* ma ){
         manager = ma;
-        mutex = mu;
     }
 };
 

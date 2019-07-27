@@ -1,8 +1,13 @@
 #include "recv.h"
+#include "packet.h"
 #include <string>
 #include <fstream>
 #include <QDebug>
+#include "videostream.h"
+#define SOCKET
 using namespace std;
+
+
 void hex_to_bin(string& hex,  unsigned char* bin)
 {
     int j = 0;
@@ -28,7 +33,7 @@ void hex_to_bin(string& hex,  unsigned char* bin)
 void Recv_package::run()
 {
     qDebug()<<"recv running!\n";
-
+#ifdef FILE
     //from file stream
     ifstream fin;
     fin.open("/Users/yueyang/yiqunyang/大一暑假/科研/control.txt");
@@ -41,16 +46,31 @@ void Recv_package::run()
         hex_to_bin(str,temp.data);
         temp.size = str.size()/2;
 
-        mutex->lock();
         manager->InputPacket(temp);
         delete []temp.data;
-        mutex->unlock();
+
+
     }
     fin.close();
+#endif
 
-/*    //from socket
-    while(socket->hasPendingDatagrams())
+#ifdef SOCKET
+    //socket
+    socket = new QUdpSocket();
+    port = 2002;
+    bool result = socket->bind(port);
+    if(!result){
+        qDebug()<<"bind failed";
+    }
+    else {
+        qDebug()<<"bind succeed";
+    }
+
+   //from socket
+    while(true){
+    if(socket->hasPendingDatagrams())
     {
+        qDebug()<<"receive datagram!";
         QByteArray datagram;
         datagram.resize(socket->pendingDatagramSize());
 
@@ -60,12 +80,13 @@ void Recv_package::run()
         temp.data = new unsigned char[temp.size];
         memcpy(temp.data,datagram.data(),temp.size);
 
-        mutex->lock();
+        m.lock();
         manager->InputPacket(temp);
         delete []temp.data;
-        mutex->unlock();
-
+        m.unlock();
     }
-    */
+    }
+
+#endif
 }
 
