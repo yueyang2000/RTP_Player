@@ -194,13 +194,13 @@ void PacketToNALU::InputPacket(Data packet)
         //cout<<"size: "<<size<<endl;
         //cout<<"pos: "<<pos<<endl;
     }
-    //qDebug()<<"receive a packet, save success!\n";
+    qDebug()<<"receive a packet, save success!";
 }
 
 Data PacketToNALU::OutputNALU()
 {
    Data tmp = q.front();
    q.pop();
-   qDebug()<<"return a NAL unit!\n";
+   qDebug()<<"return a NAL unit!";
    return tmp;
 }

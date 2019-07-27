@@ -17,10 +17,8 @@ public:
     PacketToNALU(){}
     void InputPacket(Data packet);  //传入一个包
     Data OutputNALU();  //返回一个NALU
+    int size(){return q.size();}
 };
-
-
-
 
 
 

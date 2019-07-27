@@ -27,6 +27,7 @@ extern "C"
 #include "packet.h"
 #include <QThread>
 #include "recv.h"
+#include <queue>
 
 namespace Ui {
 class VideoStream;
@@ -51,6 +52,7 @@ private:
     AVFrame *pAVFrame;
     SwsContext * pSwsContext;
     AVPacket pAVPacket;
+    AVCodecParserContext* pAVCodecParserContext;
 
     int videoStreamIndex;
     int videoWidth;
@@ -65,11 +67,15 @@ private:
     bool init();
     bool playing = false;
 
+
+
     PacketToNALU* manager;
     Ui::VideoStream *ui;
 
     Recv_package recv;
 
+    int port;
+    QUdpSocket* socket;
 
 
 private slots:
