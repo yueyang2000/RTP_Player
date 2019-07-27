@@ -41,16 +41,17 @@ void Recv_package::run()
         hex_to_bin(str,temp.data);
         temp.size = str.size()/2;
 
-        mutex->lock();
         manager->InputPacket(temp);
         delete []temp.data;
-        mutex->unlock();
+
+
     }
     fin.close();
 
-/*    //from socket
+   /*from socket
     while(socket->hasPendingDatagrams())
     {
+        qDebug()<<"from xyd!";
         QByteArray datagram;
         datagram.resize(socket->pendingDatagramSize());
 
@@ -60,12 +61,10 @@ void Recv_package::run()
         temp.data = new unsigned char[temp.size];
         memcpy(temp.data,datagram.data(),temp.size);
 
-        mutex->lock();
         manager->InputPacket(temp);
         delete []temp.data;
-        mutex->unlock();
 
     }
-    */
+*/
 }
 
