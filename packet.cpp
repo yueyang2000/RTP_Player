@@ -1,6 +1,8 @@
 #include "packet.h"
 #include <QDebug>
 #define Tranverse16(X)                 ((((short)(X) & 0xff00) >> 8) |(((short)(X) & 0x00ff) << 8))
+
+
 struct RTP_header
 {
     char V_P_X_CC;//协议版本号V，填充标志P，扩展标志X
@@ -11,7 +13,7 @@ struct RTP_header
 };
 const int inteval = 0x01000000;//输出方式很迷？？
 # define SECTION  count>0
-void PacketToNALU::InputPacket(Data packet)
+void Manager::InputPacket(Data packet)
 {
     //getline(fin,packet);
     unsigned char* buffer = packet.data;
@@ -195,12 +197,103 @@ void PacketToNALU::InputPacket(Data packet)
         //cout<<"pos: "<<pos<<endl;
     }
     qDebug()<<"receive a packet, save success!";
+    InputNALU();
 }
 
-Data PacketToNALU::OutputNALU()
+bool Manager::Outputpic(QPixmap& pix)
 {
-   Data tmp = q.front();
-   q.pop();
-   qDebug()<<"return a NAL unit!";
-   return tmp;
+    mutex.lock();
+    if(pics.empty()){
+        //qDebug()<<"no picture!";
+        mutex.unlock();
+        return false;
+
+    }
+    pix = pics.front();
+    pics.pop();
+    mutex.unlock();
+    qDebug()<<"return picture";
+    return true;
+}
+void Manager::InputNALU()
+{
+    //获得一帧数据 关键!
+    while(!q.empty()){
+        qDebug()<<"read NAL";
+        //新一帧开始
+        if(result == 0){
+            result = 1;
+            av_init_packet(&pAVPacket);
+            pAVPacket.stream_index = 0;
+        }
+
+        Data NALU = q.front();
+        q.pop();
+
+        result = av_parser_parse2(pAVCodecParserContext,pAVCodecContext,
+                                  &pAVPacket.data,&pAVPacket.size,(uint8_t *)NALU.data,NALU.size,
+                                  AV_NOPTS_VALUE, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
+        delete []NALU.data;
+        if(result != 0) continue;
+
+        qDebug()<<"获得一个frame";
+        int m_i_frameFinished = 0;
+        //解码
+        avcodec_decode_video2(pAVCodecContext,pAVFrame,&m_i_frameFinished,&pAVPacket);
+        qDebug()<<"decoded";
+        av_free_packet(&pAVPacket);
+        qDebug()<<"free";
+        if(m_i_frameFinished){
+            sws_scale(pSwsContext,(const uint8_t* const *)pAVFrame->data,pAVFrame->linesize,
+                      0,720,pAVPicture.data,pAVPicture.linesize);
+            QImage image(pAVPicture.data[0],1280,720,QImage::Format_RGB888);
+            if (image.height()>0){
+                QPixmap pix = QPixmap::fromImage(image.scaled(600,400));
+                mutex.lock();
+               pics.push(pix);
+               mutex.unlock();
+               qDebug()<<"push a pic";
+            }
+        }
+
+    }
+}
+
+Manager::Manager()
+{
+    av_register_all();//注册库中所有可用的文件格式和解码器
+    avformat_network_init();//初始化网络流格式,使用RTSP网络流时必须先执行
+    pAVFormatContext = avformat_alloc_context();//申请一个AVFormatContext结构的内存,并进行简单初始化
+    pAVFrame=av_frame_alloc();
+
+
+    avpicture_alloc(&pAVPicture,AV_PIX_FMT_RGB24,1280,720);
+     //照抄
+
+
+    //获取视频流解码器
+    AVCodec *pAVCodec;
+    pAVCodec = avcodec_find_decoder(AV_CODEC_ID_H264);
+    pAVCodecContext = avcodec_alloc_context3(pAVCodec);
+    pAVCodecContext->width = 1280;
+    pAVCodecContext->height = 720;
+
+    pAVCodecParserContext = av_parser_init(AV_CODEC_ID_H264);
+
+    pSwsContext = sws_getContext(1280,720,AV_PIX_FMT_YUV420P,1280,720,AV_PIX_FMT_RGB24,SWS_BICUBIC,0,0,0);
+     //这段照搬
+    //打开对应解码器
+    int result = avcodec_open2(pAVCodecContext,pAVCodec,NULL);
+    if (result<0){
+        qDebug()<<"打开解码器失败";
+    }
+
+    qDebug()<<"初始化视频流成功";
+}
+void Manager::stop()
+{
+    avformat_free_context(pAVFormatContext);
+    av_frame_free(&pAVFrame);
+    sws_freeContext(pSwsContext);
+    avcodec_close(pAVCodecContext);
 }
