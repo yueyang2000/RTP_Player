@@ -1,4 +1,6 @@
 # RTP_Player
-based on ffmpeg, socket, Qt
-### 2019.07.31
-程序基本可以跑起来了，可以直播视频画面，画面变化较快时高糊
+RTP raw stream player based on ffmpeg and Qt
+
+- This project is originally used to play video stream that comes from a Parrot Drone.
+- The application receive raw RTP packet through socket and decode the video frame by frame. 
+
